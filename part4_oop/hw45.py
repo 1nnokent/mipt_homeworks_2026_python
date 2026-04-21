@@ -90,10 +90,7 @@ class LFUPolicy(Policy[K]):
     _key_counter: dict[K, int] = field(default_factory=dict, init=False)
 
     def register_access(self, key: K) -> None:
-        if key in self._key_counter:
-            self._key_counter[key] += 1
-        else:
-            self._key_counter[key] = 1
+        self._key_counter[key] = self._key_counter.get(key, 0) + 1
 
     def get_key_to_evict(self) -> K | None:
         if len(self._key_counter) > self.capacity:
@@ -124,7 +121,7 @@ class MIPTCache(Cache[K, V]):
     def set(self, key: K, value: V) -> None:
         self.storage.set(key, value)
         self.policy.register_access(key)
-        key_to_evict: K = self.policy.get_key_to_evict()
+        key_to_evict = self.policy.get_key_to_evict()
         if key_to_evict is not None:
             self.storage.remove(key_to_evict)
             self.policy.remove_key(key_to_evict)
