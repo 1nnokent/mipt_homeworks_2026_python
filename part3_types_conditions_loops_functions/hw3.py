@@ -38,7 +38,20 @@ EXPENSE_CATEGORIES = {
 
 REQUEST_TYPES = [INCOME_REQUEST, COST_REQUEST, STATS_REQUEST]
 
-MONTHS_DAYS = {1: 31, 2: 28, 3: 31, 4: 30, 5: 31, 6: 30, 7: 31, 8: 31, 9: 30, 10: 31, 11: 30, 12: 31}
+MONTHS_DAYS = {
+    1: 31,
+    2: 28,
+    3: 31,
+    4: 30,
+    5: 31,
+    6: 30,
+    7: 31,
+    8: 31,
+    9: 30,
+    10: 31,
+    11: 30,
+    12: 31
+}
 
 financial_transactions_storage: list[dict[str, Any]] = []
 
@@ -160,10 +173,13 @@ def cost_request_parser(request_chopped: list[str]) -> dict[str, Any] | str:
     category = category_parser(request_chopped[1])
     amount = number_parser(request_chopped[2])
     date = extract_date(request_chopped[3])
+    error = None
     if amount is None:
-        return NONPOSITIVE_VALUE_MSG
+        error = NONPOSITIVE_VALUE_MSG
     if date is None:
-        return INCORRECT_DATE_MSG
+        error = INCORRECT_DATE_MSG
+    if error is not None:
+        return error
     if category is None:
         return NOT_EXISTS_CATEGORY
     common_category, target_category = category
