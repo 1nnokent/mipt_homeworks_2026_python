@@ -179,15 +179,12 @@ def cost_request_parser(request_chopped: list[str]) -> dict[str, Any] | str:
     category = category_parser(request_chopped[1])
     amount = number_parser(request_chopped[2])
     date = extract_date(request_chopped[3])
-    error = None
     if amount is None:
-        error = NONPOSITIVE_VALUE_MSG
-    elif date is None:
-        error = INCORRECT_DATE_MSG
-    elif category is None:
-        error = NOT_EXISTS_CATEGORY
-    if error is not None:
-        return error
+        return NONPOSITIVE_VALUE_MSG
+    if date is None:
+        return INCORRECT_DATE_MSG
+    if category is None:
+        return NOT_EXISTS_CATEGORY
     common_category, target_category = category
     return {REQUEST_TYPE: COST_REQUEST,
             "common_category": common_category,
@@ -240,15 +237,15 @@ def cost_handler(category_name: str, amount: float, income_date: str) -> str:
     common_category, target_category = parsed_category
     bad1 = common_category not in EXPENSE_CATEGORIES
     bad2 = target_category not in EXPENSE_CATEGORIES[common_category]
-    if bad1 or bad2:
-        financial_transactions_storage.append({})
-        return NOT_EXISTS_CATEGORY
     if amount <= 0:
         financial_transactions_storage.append({})
         return NONPOSITIVE_VALUE_MSG
     if extract_date(income_date) is None:
         financial_transactions_storage.append({})
         return INCORRECT_DATE_MSG
+    if bad1 or bad2:
+        financial_transactions_storage.append({})
+        return NOT_EXISTS_CATEGORY
     financial_transactions_storage.append({REQUEST_TYPE: COST_REQUEST,
                                            CATEGORY: category_name,
                                            AMOUNT: amount,
@@ -274,8 +271,8 @@ def stats_handler(report_date: str) -> str:
             else:
                 expenses += elem[AMOUNT]
                 category = elem[CATEGORY]
-                detailed_expenses[category] = detailed_expenses.get(category, 0) + elem[AMOUNT]\
-
+                detailed_expenses[category] = detailed_expenses.get(category, 0) + elem[AMOUNT] \
+ \
     total_capital = income - expenses
 
     parts = [f"Your statistics as of {report_date}:\n",
