@@ -36,26 +36,9 @@ EXPENSE_CATEGORIES = {
     "Other": ("SomeCategory", "SomeOtherCategory"),
 }
 
-REQUEST_TYPES = [
-    INCOME_REQUEST,
-    COST_REQUEST,
-    STATS_REQUEST
-]
+REQUEST_TYPES = [INCOME_REQUEST, COST_REQUEST, STATS_REQUEST]
 
-MONTHS_DAYS = {
-    1: 31,
-    2: 28,
-    3: 31,
-    4: 30,
-    5: 31,
-    6: 30,
-    7: 31,
-    8: 31,
-    9: 30,
-    10: 31,
-    11: 30,
-    12: 31
-}
+MONTHS_DAYS = {1: 31, 2: 28, 3: 31, 4: 30, 5: 31, 6: 30, 7: 31, 8: 31, 9: 30, 10: 31, 11: 30, 12: 31}
 
 financial_transactions_storage: list[dict[str, Any]] = []
 
@@ -166,9 +149,7 @@ def income_request_parser(request_chopped: list[str]) -> dict[str, Any] | str:
     date = extract_date(request_chopped[2])
     if date is None:
         return INCORRECT_DATE_MSG
-    return {REQUEST_TYPE: INCOME_REQUEST,
-            AMOUNT: amount,
-            DATE: date}
+    return {REQUEST_TYPE: INCOME_REQUEST, AMOUNT: amount, DATE: date}
 
 
 def cost_request_parser(request_chopped: list[str]) -> dict[str, Any] | str:
@@ -186,11 +167,13 @@ def cost_request_parser(request_chopped: list[str]) -> dict[str, Any] | str:
     if category is None:
         return NOT_EXISTS_CATEGORY
     common_category, target_category = category
-    return {REQUEST_TYPE: COST_REQUEST,
-            "common_category": common_category,
-            "target_category": target_category,
-            AMOUNT: amount,
-            DATE: date}
+    return {
+        REQUEST_TYPE: COST_REQUEST,
+        "common_category": common_category,
+        "target_category": target_category,
+        AMOUNT: amount,
+        DATE: date,
+    }
 
 
 def stats_request_parser(request_chopped: list[str]) -> dict[str, Any] | str:
@@ -199,8 +182,7 @@ def stats_request_parser(request_chopped: list[str]) -> dict[str, Any] | str:
     date = extract_date(request_chopped[1])
     if date is None:
         return INCORRECT_DATE_MSG
-    return {REQUEST_TYPE: STATS_REQUEST,
-            DATE: date}
+    return {REQUEST_TYPE: STATS_REQUEST, DATE: date}
 
 
 def request_parser(request: str) -> dict[str, Any] | str:
@@ -223,9 +205,9 @@ def income_handler(amount: float, income_date: str) -> str:
     if extract_date(income_date) is None:
         financial_transactions_storage.append({})
         return INCORRECT_DATE_MSG
-    financial_transactions_storage.append({REQUEST_TYPE: INCOME_REQUEST,
-                                           AMOUNT: amount,
-                                           DATE: extract_date(income_date)})
+    financial_transactions_storage.append(
+        {REQUEST_TYPE: INCOME_REQUEST, AMOUNT: amount, DATE: extract_date(income_date)}
+    )
     return OP_SUCCESS_MSG
 
 
@@ -246,10 +228,9 @@ def cost_handler(category_name: str, amount: float, income_date: str) -> str:
     if bad1 or bad2:
         financial_transactions_storage.append({})
         return NOT_EXISTS_CATEGORY
-    financial_transactions_storage.append({REQUEST_TYPE: COST_REQUEST,
-                                           CATEGORY: category_name,
-                                           AMOUNT: amount,
-                                           DATE: extract_date(income_date)})
+    financial_transactions_storage.append(
+        {REQUEST_TYPE: COST_REQUEST, CATEGORY: category_name, AMOUNT: amount, DATE: extract_date(income_date)}
+    )
     return OP_SUCCESS_MSG
 
 
@@ -275,15 +256,12 @@ def stats_handler(report_date: str) -> str:
 
     total_capital = income - expenses
 
-    parts = [f"Your statistics as of {report_date}:\n",
-             f"Total capital: {total_capital} rubles\n"]
+    parts = [f"Your statistics as of {report_date}:\n", f"Total capital: {total_capital} rubles\n"]
     if total_capital > 0:
         parts.append(f"This month, the profit amounted to {total_capital} rubles.\n")
     else:
         parts.append(f"This month, the loss amounted to {total_capital} rubles.\n")
-    parts.append(f"Income: {income} rubles\n"
-                 f"Expenses: {expenses} rubles\n\n"
-                 f"Details (category: amount):\n")
+    parts.append(f"Income: {income} rubles\nExpenses: {expenses} rubles\n\nDetails (category: amount):\n")
     counter = 1
     for element in detailed_expenses.items():
         parts.append(f"{counter}. {element[0]}: {element[1]}\n")
@@ -296,14 +274,17 @@ def request_handler(request: dict[str, Any] | str) -> None:
         print(request)
         return
     if request[REQUEST_TYPE] == INCOME_REQUEST:
-        print(income_handler(request[AMOUNT],
-                             to_str_date(request[DATE])))
+        print(income_handler(request[AMOUNT], to_str_date(request[DATE])))
     elif request[REQUEST_TYPE] == "cost_categories":
         print(cost_categories_handler())
     elif request[REQUEST_TYPE] == COST_REQUEST:
-        print(cost_handler(f"{request["common_category"]}::{request["target_category"]}",
-                           request[AMOUNT],
-                           to_str_date(request[DATE])))
+        print(
+            cost_handler(
+                f"{request['common_category']}::{request['target_category']}",
+                request[AMOUNT],
+                to_str_date(request[DATE]),
+            )
+        )
     elif request[REQUEST_TYPE] == STATS_REQUEST:
         print(stats_handler(request[DATE]))
 
