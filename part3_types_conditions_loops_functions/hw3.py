@@ -38,22 +38,21 @@ EXPENSE_CATEGORIES = {
 
 REQUEST_TYPES = [INCOME_REQUEST, COST_REQUEST, STATS_REQUEST]
 
-MONTHS_DAYS = dict(
-    [
-        (1, 31),
-        (2, 28),
-        (3, 31),
-        (4, 30),
-        (5, 31),
-        (6, 30),
-        (7, 31),
-        (8, 31),
-        (9, 30),
-        (10, 31),
-        (11, 30),
-        (12, 31),
-    ]
-)
+# Комментарии к месяцам для того, чтобы раф не схлопнул всё в одну строку (потому что тогда джоунс комплексити высокая)
+MONTHS_DAYS = {
+    1: 31,  # Jan
+    2: 28,  # Feb
+    3: 31,  # Mar
+    4: 30,  # Apr
+    5: 31,  # May
+    6: 30,  # Jun
+    7: 31,  # Jul
+    8: 31,  # Aug
+    9: 30,  # Sep
+    10: 31,  # Oct
+    11: 30,  # Nov
+    12: 31,  # Dec
+}
 
 financial_transactions_storage: list[dict[str, Any]] = []
 
