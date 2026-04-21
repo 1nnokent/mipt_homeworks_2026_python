@@ -84,8 +84,8 @@ def number_parser(num: str) -> float | None:
         return None
     for elem in num:
         bad5 = elem not in DIGITS
-        bad6 = elem in {".", ","}
-        if bad5 or bad6:
+        bad6 = not elem in {".", ","}
+        if bad5 and bad6:
             return None
     if num[-1] == "." or num[-1] == ",":
         return None
@@ -124,13 +124,13 @@ def extract_date(maybe_dt: str) -> tuple[int, int, int] | None:
 
 
 def to_str_date(date: list[int, int, int]) -> str:
+    parts = []
     for i in range(2):
-        parts = []
         if len(str(date[i])) == 1:
             parts.append("0")
-        parts.append(date[i])
+        parts.append(str(date[i]))
         parts.append(TIRE)
-    parts.append(date[2])
+    parts.append(str(date[2]))
     return "".join(parts)
 
 
@@ -272,7 +272,7 @@ def stats_handler(report_date: str) -> str:
             else:
                 expenses += elem[AMOUNT]
                 category = elem[CATEGORY]
-                detailed_expenses[category] += detailed_expenses.get(category, 0) + elem[AMOUNT]\
+                detailed_expenses[category] = detailed_expenses.get(category, 0) + elem[AMOUNT]\
 
     total_capital = income - expenses
 
@@ -287,12 +287,15 @@ def stats_handler(report_date: str) -> str:
                  f"Details (category: amount):\n")
     counter = 1
     for element in detailed_expenses.items():
-        parts.append(f"{counter}. {element}: {detailed_expenses[element]}\n")
+        parts.append(f"{counter}. {element[0]}: {element[1]}\n")
         counter += 1
     return "".join(parts)
 
 
 def request_handler(request: dict | str) -> None:
+    if isinstance(request, str):
+        print(request)
+        return
     if request[REQUEST_TYPE] == INCOME_REQUEST:
         print(income_handler(request[AMOUNT],
                              to_str_date(request[DATE])))
