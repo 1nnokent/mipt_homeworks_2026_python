@@ -180,12 +180,12 @@ def cost_request_parser(request_chopped: list[str]) -> dict | str:
     amount = number_parser(request_chopped[2])
     date = extract_date(request_chopped[3])
     error = None
-    if category is None:
-        error = NOT_EXISTS_CATEGORY
-    elif amount is None:
+    if amount is None:
         error = NONPOSITIVE_VALUE_MSG
     elif date is None:
         error = INCORRECT_DATE_MSG
+    elif category is None:
+        error = NOT_EXISTS_CATEGORY
     if error is not None:
         return error
     return {REQUEST_TYPE: COST_REQUEST,
