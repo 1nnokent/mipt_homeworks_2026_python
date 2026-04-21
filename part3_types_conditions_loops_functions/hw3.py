@@ -84,7 +84,7 @@ def number_parser(num: str) -> float | None:
         return None
     for elem in num:
         bad5 = elem not in DIGITS
-        bad6 = not elem in {".", ","}
+        bad6 = elem not in {".", ","}
         if bad5 and bad6:
             return None
     if num[-1] == "." or num[-1] == ",":
@@ -123,7 +123,7 @@ def extract_date(maybe_dt: str) -> tuple[int, int, int] | None:
     return date
 
 
-def to_str_date(date: list[int, int, int]) -> str:
+def to_str_date(date: tuple[int, int, int]) -> str:
     parts = []
     for i in range(2):
         if len(str(date[i])) == 1:
@@ -157,7 +157,7 @@ def category_parser(category: str) -> list[str] | None:
     return returner
 
 
-def income_request_parser(request_chopped: list[str]) -> dict | str:
+def income_request_parser(request_chopped: list[str]) -> dict[str, Any] | str:
     if len(request_chopped) != THREE:
         return UNKNOWN_COMMAND_MSG
     amount = number_parser(request_chopped[1])
@@ -171,7 +171,7 @@ def income_request_parser(request_chopped: list[str]) -> dict | str:
             DATE: date}
 
 
-def cost_request_parser(request_chopped: list[str]) -> dict | str:
+def cost_request_parser(request_chopped: list[str]) -> dict[str, Any] | str:
     if len(request_chopped) not in [2, 4]:
         return UNKNOWN_COMMAND_MSG
     if len(request_chopped) == TWO and request_chopped[1] == "categories":
@@ -188,14 +188,15 @@ def cost_request_parser(request_chopped: list[str]) -> dict | str:
         error = NOT_EXISTS_CATEGORY
     if error is not None:
         return error
+    common_category, target_category = category
     return {REQUEST_TYPE: COST_REQUEST,
-            "common_category": category[0],
-            "target_category": category[1],
+            "common_category": common_category,
+            "target_category": target_category,
             AMOUNT: amount,
             DATE: date}
 
 
-def stats_request_parser(request_chopped: list[str]) -> dict | str:
+def stats_request_parser(request_chopped: list[str]) -> dict[str, Any] | str:
     if len(request_chopped) != TWO:
         return UNKNOWN_COMMAND_MSG
     date = extract_date(request_chopped[1])
@@ -205,7 +206,7 @@ def stats_request_parser(request_chopped: list[str]) -> dict | str:
             DATE: date}
 
 
-def request_parser(request: str) -> dict | str:
+def request_parser(request: str) -> dict[str, Any] | str:
     request_chopped = request.split()
     if request_chopped[0] not in REQUEST_TYPES:
         return UNKNOWN_COMMAND_MSG
@@ -232,10 +233,11 @@ def income_handler(amount: float, income_date: str) -> str:
 
 
 def cost_handler(category_name: str, amount: float, income_date: str) -> str:
-    if category_parser(category_name) is None:
+    parsed_category = category_parser(category_name)
+    if parsed_category is None:
         financial_transactions_storage.append({})
         return NOT_EXISTS_CATEGORY
-    common_category, target_category = category_parser(category_name)
+    common_category, target_category = parsed_category
     bad1 = common_category not in EXPENSE_CATEGORIES
     bad2 = target_category not in EXPENSE_CATEGORIES[common_category]
     if bad1 or bad2:
@@ -255,7 +257,7 @@ def cost_handler(category_name: str, amount: float, income_date: str) -> str:
 
 
 def cost_categories_handler() -> str:
-    lines = []
+    lines: list[str] = []
     for key, values in EXPENSE_CATEGORIES.items():
         lines.extend(f"{key}::{value}" for value in values)
     return "\n".join(lines)
@@ -264,7 +266,7 @@ def cost_categories_handler() -> str:
 def stats_handler(report_date: str) -> str:
     income = 0
     expenses = 0
-    detailed_expenses = {}
+    detailed_expenses: dict[str, float] = {}
     for elem in financial_transactions_storage:
         if less_or_equal(elem[DATE], report_date):
             if elem[REQUEST_TYPE] == INCOME_REQUEST:
@@ -292,7 +294,7 @@ def stats_handler(report_date: str) -> str:
     return "".join(parts)
 
 
-def request_handler(request: dict | str) -> None:
+def request_handler(request: dict[str, Any] | str) -> None:
     if isinstance(request, str):
         print(request)
         return
