@@ -38,7 +38,18 @@ EXPENSE_CATEGORIES = {
 
 REQUEST_TYPES = [INCOME_REQUEST, COST_REQUEST, STATS_REQUEST]
 
-MONTHS_DAYS = {1: 31, 2: 28, 3: 31, 4: 30, 5: 31, 6: 30, 7: 31, 8: 31, 9: 30, 10: 31, 11: 30, 12: 31}
+MONTHS_DAYS = {1: 31,
+               2: 28,
+               3: 31,
+               4: 30,
+               5: 31,
+               6: 30,
+               7: 31,
+               8: 31,
+               9: 30,
+               10: 31,
+               11: 30,
+               12: 31}
 
 financial_transactions_storage: list[dict[str, Any]] = []
 
