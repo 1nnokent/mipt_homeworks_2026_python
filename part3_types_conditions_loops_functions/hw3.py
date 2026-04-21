@@ -271,8 +271,8 @@ def stats_handler(report_date: str) -> str:
             else:
                 expenses += elem[AMOUNT]
                 category = elem[CATEGORY]
-                detailed_expenses[category] = detailed_expenses.get(category, 0) + elem[AMOUNT] \
- \
+                detailed_expenses[category] = detailed_expenses.get(category, 0) + elem[AMOUNT]
+
     total_capital = income - expenses
 
     parts = [f"Your statistics as of {report_date}:\n",
