@@ -1,9 +1,7 @@
 import json
-import re
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 from functools import wraps
-import inspect
-from typing import Any, ParamSpec, Protocol, TypeVar, cast
+from typing import Any, ParamSpec, Protocol, TypeVar
 from urllib.request import urlopen
 
 INVALID_CRITICAL_COUNT = "Breaker count must be positive integer!"
@@ -56,10 +54,11 @@ class CircuitBreaker:
         def wrapper(*args: P.args, **kwargs: P.kwargs) -> R_co:
             nonlocal failures_count, block_time
 
-            now = datetime.now(timezone.utc).replace(microsecond=0)
+            now = datetime.now(datetime.UTC).replace(microsecond=0)
             if block_time is not None:
                 if now < block_time + timedelta(seconds=self.time_to_recover):
-                    raise BreakerError(f"{func.__module__}.{func.__name__}", block_time)
+                    temp = f"{func.__module__}.{func.__name__}"
+                    raise BreakerError(temp, block_time)
                 failures_count = 0
                 block_time = None
 
@@ -69,17 +68,15 @@ class CircuitBreaker:
                 if isinstance(error, self.triggers_on):
                     failures_count += 1
                     if failures_count >= self.critical_count:
-                        block_time = datetime.now(timezone.utc).replace(microsecond=0)
-                        raise BreakerError(
-                            f"{func.__module__}.{func.__name__}",
-                            block_time,
-                        ) from error
+                        block_time = datetime.now(datetime.UTC).replace(microsecond=0)
+                        temp = f"{func.__module__}.{func.__name__}"
+                        raise BreakerError(temp, block_time) from error
                 raise
 
             failures_count = 0
             return res
 
-        return cast(CallableWithMeta[P, R_co], wrapper)
+        return wrapper
 
 
 circuit_breaker = CircuitBreaker(5, 30, Exception)
