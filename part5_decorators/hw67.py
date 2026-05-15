@@ -30,7 +30,7 @@ class BreakerError(Exception):
 
 
 def is_positive_number(value: int) -> bool:
-    return type(value) is int and value > 0
+    return isinstance(value, int) and value > 0
 
 
 def validate_breaker_args(critical_count: int, time_to_recover: int) -> None:
