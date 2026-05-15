@@ -1,5 +1,7 @@
 import json
-from datetime import datetime, timedelta
+from collections.abc import Callable
+from dataclasses import dataclass
+from datetime import UTC, datetime
 from functools import wraps
 from typing import Any, ParamSpec, Protocol, TypeVar
 from urllib.request import urlopen
@@ -27,6 +29,29 @@ class BreakerError(Exception):
         self.block_time = block_time
 
 
+def is_positive_number(value: int) -> bool:
+    return type(value) is int and value > 0
+
+
+def validate_breaker_args(critical_count: int, time_to_recover: int) -> None:
+    errors = []
+
+    if not is_positive_number(critical_count):
+        errors.append(ValueError(INVALID_CRITICAL_COUNT))
+
+    if not is_positive_number(time_to_recover):
+        errors.append(ValueError(INVALID_RECOVERY_TIME))
+
+    if errors:
+        raise ExceptionGroup(VALIDATIONS_FAILED, errors)
+
+
+@dataclass
+class BreakerState:
+    failed_calls: int = 0
+    blocked_at: datetime | None = None
+
+
 class CircuitBreaker:
     def __init__(
         self,
@@ -34,49 +59,60 @@ class CircuitBreaker:
         time_to_recover: int = 30,
         triggers_on: type[Exception] = Exception,
     ):
-        errors = []
-        if type(critical_count) is not int or critical_count <= 0:
-            errors.append(ValueError(INVALID_CRITICAL_COUNT))
-        if type(time_to_recover) is not int or time_to_recover <= 0:
-            errors.append(ValueError(INVALID_RECOVERY_TIME))
-        if errors:
-            raise ExceptionGroup(VALIDATIONS_FAILED, errors)
-
+        validate_breaker_args(critical_count, time_to_recover)
         self.critical_count: int = critical_count
         self.time_to_recover: int = time_to_recover
         self.triggers_on: type[Exception] = triggers_on
 
-    def __call__(self, func: CallableWithMeta[P, R_co]) -> CallableWithMeta[P, R_co]:
-        failures_count = 0
-        block_time: datetime | None = None
+    def __call__(self, func: CallableWithMeta[P, R_co]) -> Callable[P, R_co]:
+        state = BreakerState()
 
         @wraps(func)
         def wrapper(*args: P.args, **kwargs: P.kwargs) -> R_co:
-            nonlocal failures_count, block_time
-
-            now = datetime.now(datetime.UTC).replace(microsecond=0)
-            if block_time is not None:
-                if now < block_time + timedelta(seconds=self.time_to_recover):
-                    temp = f"{func.__module__}.{func.__name__}"
-                    raise BreakerError(temp, block_time)
-                failures_count = 0
-                block_time = None
+            self._check_block(func, state)
 
             try:
-                res = func(*args, **kwargs)
+                result = func(*args, **kwargs)
             except Exception as error:
-                if isinstance(error, self.triggers_on):
-                    failures_count += 1
-                    if failures_count >= self.critical_count:
-                        block_time = datetime.now(datetime.UTC).replace(microsecond=0)
-                        temp = f"{func.__module__}.{func.__name__}"
-                        raise BreakerError(temp, block_time) from error
+                self._save_error(func, state, error)
                 raise
 
-            failures_count = 0
-            return res
+            state.failed_calls = 0
+            state.blocked_at = None
+            return result
 
         return wrapper
+
+    def _check_block(self, func: CallableWithMeta[P, R_co], state: BreakerState) -> None:
+        if state.blocked_at is None:
+            return
+
+        now = datetime.now(UTC).replace(microsecond=0)
+        seconds_from_block = (now - state.blocked_at).total_seconds()
+        if seconds_from_block < self.time_to_recover:
+            raise BreakerError(self._func_name(func), state.blocked_at)
+
+        state.failed_calls = 0
+        state.blocked_at = None
+
+    def _save_error(
+        self,
+        func: CallableWithMeta[P, R_co],
+        state: BreakerState,
+        error: Exception,
+    ) -> None:
+        if not isinstance(error, self.triggers_on):
+            return
+
+        state.failed_calls += 1
+        if state.failed_calls < self.critical_count:
+            return
+
+        state.blocked_at = datetime.now(UTC).replace(microsecond=0)
+        raise BreakerError(self._func_name(func), state.blocked_at) from error
+
+    def _func_name(self, func: CallableWithMeta[P, R_co]) -> str:
+        return f"{func.__module__}.{func.__name__}"
 
 
 circuit_breaker = CircuitBreaker(5, 30, Exception)
